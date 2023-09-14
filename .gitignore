@@ -1,0 +1,10 @@
+.venv
+main.py
+__pycache__
+grammar
+.typedb-studio
+dist
+build
+typedb_schema_builder.egg-info
+test_use_case.py
+requirements.txt
