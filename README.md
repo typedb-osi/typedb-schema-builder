@@ -1,5 +1,5 @@
-# python-typedb-schema-builder
-typedb schema builder package
+# TypeDB Schema Builder
+TypeDB schema builder package
 
 How to test the builder out:
 1. Install using pip
