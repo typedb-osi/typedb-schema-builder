@@ -5,9 +5,9 @@ TypeDB schema builder package can be used to construct a TypeQL define query wit
 ## Installation
 
 Install using pip:
-   ``` 
-      python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ typedb-schema-builder
-   ```
+``` 
+python -m pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ typedb-schema-builder
+```
 
 ## Methods
 
@@ -80,26 +80,24 @@ Functions offered:
 ### Example
 
 The following is a Python code usage example:
-
-      ```
-      from typedbSchemaBuilder import Builder
+```
+from typedbSchemaBuilder import Builder
       
-      builder=Builder.Builder()
+builder=Builder.Builder()
       
-      builder.sub("person", "entity")
-      builder.sub("ownership", "relation")
-      builder.relates("ownership", "owner")
-      builder.plays("person", "ownership", "owner")
+builder.sub("person", "entity")
+builder.sub("ownership", "relation")
+builder.relates("ownership", "owner")
+builder.plays("person", "ownership", "owner")
       
-      builder.get_schema()
-      ```
+builder.get_schema()
+```
 The above example produces the following output:
 
-      ```
-         define
-         person sub entity;
-         ownership sub relation,
-             relates owner;
-         person plays ownership:owner;
-      ```
-
+```
+define
+person sub entity;
+ownership sub relation,
+    relates owner;
+person plays ownership:owner;
+```
