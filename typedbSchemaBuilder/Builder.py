@@ -398,22 +398,6 @@ class Builder:
         query_type = query[0]
         getattr(self, query_type)(*query[1:])
 
-    def remove(self, q_ids: list):
-        n = len(self._query_log)
-        self._schema = "define"
-        self._context = "?#"
-
-        old_query_log = deque()
-        old_query_log, self._query_log = self._query_log, old_query_log
-
-        self.init_types()
-        for i in range(0, n):
-            query = old_query_log[0]
-            old_query_log.popleft()
-            if query[-1] in q_ids:
-                continue
-            self.make_query(query)
-
     def print_query_log(self):
         for q in self._query_log:
             print(q)
