@@ -65,10 +65,6 @@ Functions offered:
 
   Prints all the query IDs attached to every query.
 
-* remove(q_ids: list):
-
-  Removes all the queries given in the list argument "q_ids". And re-renders the remaining queries.
-
 ## Usage
 
 1. [Install](#installation) the package.
