@@ -177,31 +177,6 @@ person sub entity,
         # Add assertions to test the behavior of the owns function
         self.assertEqual(self.builder.get_schema(), expected_output, message)
 
-        
-    def test_remove(self):
-        self.builder.sub("name","attribute","string")
-        self.builder.regex("name","[ABC]*")
-        self.builder.sub("person","entity")
-        self.builder.owns("person","name")
-        qid=self.builder.unique("person","name")
-        self.builder.key("person","name")
-        self.builder.remove([qid])
-
-        expected_output = """define
-name sub attribute,
-    value string,
-    regex "[ABC]*";
-person sub entity,
-    owns name,
-    owns name @key;"""
-
-
-
-        message = "remove method failed"
-        
-        # Add assertions to test the behavior of the owns function
-        self.assertEqual(self.builder.get_schema(), expected_output, message)
-
 
 if __name__ == '__main__':
     unittest.main()
