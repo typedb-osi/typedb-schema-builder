@@ -8,8 +8,8 @@ class Builder:
     def __init__(self) -> None:
         self._schema = "define"
         self._context = "?#"
-        self._query_log = deque()
-        self._query_id_generator = 1
+        self._constraint_log = deque()
+        self._constraint_id_generator = 1
         self._types = dict()
         self.init_types()
 
@@ -24,24 +24,24 @@ class Builder:
         self._types["relation"].root_type = "relation"
 
     def get_schema(self):
-        if len(self._query_log) == 0:
+        if len(self._constraint_log) == 0:
             raise Exception(
                 "Error: Schema is empty. Make changes to the schema before attempting GetSchema"
             )
 
-        n = len(self._query_log)
+        n = len(self._constraint_log)
         self._schema = "define"
         self._context = "?#"
 
-        old_query_log = deque()
-        old_query_log, self._query_log = self._query_log, old_query_log
+        old_constraint_log = deque()
+        old_constraint_log, self._constraint_log = self._constraint_log, old_constraint_log
 
         self.init_types()
 
         for i in range(0, n):
-            query = old_query_log[0]
-            old_query_log.popleft()
-            self.make_query(query)
+            constraint = old_constraint_log[0]
+            old_constraint_log.popleft()
+            self.make_constraint(constraint)
 
         escaped_string = r"" + self._schema
         decoded_string = bytes(escaped_string, "utf-8").decode("unicode_escape")
@@ -57,25 +57,25 @@ class Builder:
             self._context = type_
             self._schema += "\n" + type_ + " abstract;"
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(["abstract", type_, self._query_id_generator])
-            self._query_id_generator += 1
+            constraint_log.append(["abstract", type_, self._constraint_id_generator])
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["abstract", type_, qid])
+            constraint_log.append(["abstract", type_, qid])
 
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
         self._types[type_].abstract = True
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
 
-        self._query_log = query_log
-        return self._query_log[-1][-1]
+        self._constraint_log = constraint_log
+        return self._constraint_log[-1][-1]
 
     def sub(self, subtype: str, type_: str, value: str = None, qid: int = -1):
         self._context = subtype
@@ -88,15 +88,15 @@ class Builder:
         else:
             self._schema += "\n" + subtype + " sub " + type_ + ";"
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(["sub", subtype, type_, value, self._query_id_generator])
-            self._query_id_generator += 1
+            constraint_log.append(["sub", subtype, type_, value, self._constraint_id_generator])
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["sub", subtype, type_, value, qid])
+            constraint_log.append(["sub", subtype, type_, value, qid])
 
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
         checker.super_type_check()
@@ -105,9 +105,9 @@ class Builder:
         self._types[subtype].inherit(self._types[type_])
         self._types[subtype].add_super_type(type_)
 
-        self._query_log = query_log
+        self._constraint_log = constraint_log
 
-        return self._query_log[-1][-1]
+        return self._constraint_log[-1][-1]
 
     def owns(self, type_: str, owns: str, qid: int = -1):
         if self._context == type_:
@@ -118,22 +118,22 @@ class Builder:
             self._context = type_
             self._schema += "\n" + type_ + " owns " + owns + ";"
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(["owns", type_, owns, self._query_id_generator])
-            self._query_id_generator += 1
+            constraint_log.append(["owns", type_, owns, self._constraint_id_generator])
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["owns", type_, owns, qid])
+            constraint_log.append(["owns", type_, owns, qid])
 
         if type_ in self._types.keys():
             self._types[type_].add_attribute(owns)
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
 
-        self._query_log = query_log
-        return self._query_log[-1][-1]
+        self._constraint_log = constraint_log
+        return self._constraint_log[-1][-1]
 
     def own_as(self, type_: str, to_own: str, from_own: str, qid: int = -1):
         if self._context == type_:
@@ -144,27 +144,27 @@ class Builder:
             self._context = type_
             self._schema += "\n" + type_ + " owns " + to_own + " as " + from_own + ";"
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(
-                ["own_as", type_, to_own, from_own, self._query_id_generator]
+            constraint_log.append(
+                ["own_as", type_, to_own, from_own, self._constraint_id_generator]
             )
-            self._query_id_generator += 1
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["own_as", type_, to_own, from_own, qid])
+            constraint_log.append(["own_as", type_, to_own, from_own, qid])
 
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
         self._types[type_].add_attribute(to_own)
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
 
-        self._query_log = query_log
-        return self._query_log[-1][-1]
+        self._constraint_log = constraint_log
+        return self._constraint_log[-1][-1]
 
     def relates(self, type_: str, role: str, qid: int = -1):
         if self._context == type_:
@@ -175,20 +175,20 @@ class Builder:
             self._context = type_
             self._schema += "\n" + type_ + " relates " + role + ";"
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(["relates", type_, role, self._query_id_generator])
-            self._query_id_generator += 1
+            constraint_log.append(["relates", type_, role, self._constraint_id_generator])
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["relates", type_, role, qid])
+            constraint_log.append(["relates", type_, role, qid])
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
         self._types[type_].add_relation_roles(role)
 
-        self._query_log = query_log
-        return self._query_log[-1][-1]
+        self._constraint_log = constraint_log
+        return self._constraint_log[-1][-1]
 
     def relates_as(self, type_, to_role: str, from_role: str, qid: int = -1):
         if self._context == type_:
@@ -201,23 +201,23 @@ class Builder:
                 "\n" + type_ + " relates " + to_role + " as " + from_role + ";"
             )
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(
-                ["relates_as", type_, to_role, from_role, self._query_id_generator]
+            constraint_log.append(
+                ["relates_as", type_, to_role, from_role, self._constraint_id_generator]
             )
-            self._query_id_generator += 1
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["relates_as", type_, to_role, from_role, qid])
+            constraint_log.append(["relates_as", type_, to_role, from_role, qid])
 
         self._types[type_].add_relation_roles(from_role)
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
 
-        self._query_log = query_log
-        return self._query_log[-1][-1]
+        self._constraint_log = constraint_log
+        return self._constraint_log[-1][-1]
 
     def plays(self, type_: str, relation: str, role: str, qid: int = -1):
         if self._context == type_:
@@ -228,21 +228,21 @@ class Builder:
             self._context = type_
             self._schema += "\n" + type_ + " plays " + relation + ":" + role + ";"
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(["plays", type_, relation, role, self._query_id_generator])
-            self._query_id_generator += 1
+            constraint_log.append(["plays", type_, relation, role, self._constraint_id_generator])
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["plays", type_, relation, role, qid])
+            constraint_log.append(["plays", type_, relation, role, qid])
 
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
         self._types[type_].add_role(relation, role)
 
-        self._query_log = query_log
-        return self._query_log[-1][-1]
+        self._constraint_log = constraint_log
+        return self._constraint_log[-1][-1]
 
     def plays_as(
         self, type_: str, relation: str, to_role: str, from_role: str, qid: int = -1
@@ -267,34 +267,34 @@ class Builder:
                 + ";"
             )
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(
+            constraint_log.append(
                 [
                     "plays_as",
                     type_,
                     relation,
                     to_role,
                     from_role,
-                    self._query_id_generator,
+                    self._constraint_id_generator,
                 ]
             )
-            self._query_id_generator += 1
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["plays_as", type_, relation, to_role, from_role, qid])
+            constraint_log.append(["plays_as", type_, relation, to_role, from_role, qid])
 
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
         self._types[type_].add_role(relation, to_role)
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
 
-        self._query_log = query_log
-        return self._query_log[-1][-1]
+        self._constraint_log = constraint_log
+        return self._constraint_log[-1][-1]
 
     # value should be added while subtyping attribute
     # def value(self, type_: str, value: str, qid: int=-1):
@@ -306,20 +306,20 @@ class Builder:
     #         self._context = type_
     #         self._schema += "\n" + type_ + " value " + value + ";"
 
-    #     query_log=copy.deepcopy(self._query_log)
+    #     constraint_log=copy.deepcopy(self._constraint_log)
     #     if(qid==-1):
-    #         query_log.append(["value", type_, value, self._query_id_generator])
-    #         self._query_id_generator += 1
+    #         constraint_log.append(["value", type_, value, self._constraint_id_generator])
+    #         self._constraint_id_generator += 1
     #     else:
-    #         query_log.append(["value", type_, value, qid])
+    #         constraint_log.append(["value", type_, value, qid])
 
     #     checker = SchemaChecker (
-    #         schema=self._schema, query_log=query_log, types_=self._types
+    #         schema=self._schema, constraint_log=constraint_log, types_=self._types
     #     )
     #     checker.test()
 
-    #     self._query_log=query_log
-    #     return self._query_log[-1][-1]
+    #     self._constraint_log=constraint_log
+    #     return self._constraint_log[-1][-1]
 
     def regex(self, type_: str, regex: str, qid: int = -1):
         if self._context == type_:
@@ -330,20 +330,20 @@ class Builder:
             self._context = type_
             self._schema += "\n" + type_ + ' regex "' + regex + '";'
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(["regex", type_, regex, self._query_id_generator])
-            self._query_id_generator += 1
+            constraint_log.append(["regex", type_, regex, self._constraint_id_generator])
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["regex", type_, regex, qid])
+            constraint_log.append(["regex", type_, regex, qid])
 
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
 
-        self._query_log = query_log
-        return self._query_log[-1][-1]
+        self._constraint_log = constraint_log
+        return self._constraint_log[-1][-1]
 
     def key(self, type_: str, attribute: str, qid: int = -1):
         if self._context == type_:
@@ -354,20 +354,20 @@ class Builder:
             self._context = type_
             self._schema += "\n" + type_ + " owns " + attribute + " @key;"
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(["key", type_, attribute, self._query_id_generator])
-            self._query_id_generator += 1
+            constraint_log.append(["key", type_, attribute, self._constraint_id_generator])
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["key", type_, attribute, qid])
+            constraint_log.append(["key", type_, attribute, qid])
 
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
 
-        self._query_log = query_log
-        return query_log[-1][-1]
+        self._constraint_log = constraint_log
+        return constraint_log[-1][-1]
 
     def unique(self, type_: str, attribute: str, qid: int = -1):
         if self._context == type_:
@@ -378,26 +378,26 @@ class Builder:
             self._context = type_
             self._schema += "\n" + type_ + " owns " + attribute + " @unique;"
 
-        query_log = copy.deepcopy(self._query_log)
+        constraint_log = copy.deepcopy(self._constraint_log)
         if qid == -1:
-            query_log.append(["unique", type_, attribute, self._query_id_generator])
-            self._query_id_generator += 1
+            constraint_log.append(["unique", type_, attribute, self._constraint_id_generator])
+            self._constraint_id_generator += 1
         else:
-            query_log.append(["unique", type_, attribute, qid])
+            constraint_log.append(["unique", type_, attribute, qid])
 
         checker = SchemaChecker(
-            schema=self._schema, query_log=query_log, types_=self._types
+            schema=self._schema, constraint_log=constraint_log, types_=self._types
         )
         checker.test()
 
-        self._query_log = query_log
-        return self._query_log[-1][-1]
+        self._constraint_log = constraint_log
+        return self._constraint_log[-1][-1]
 
-    # idea for remove recontrust schema after negating some queries using query ids and reconstructing schema
-    def make_query(self, query: list):
-        query_type = query[0]
-        getattr(self, query_type)(*query[1:])
+    # idea for remove recontrust schema after negating some constraints using constraint ids and reconstructing schema
+    def make_constraint(self, constraint: list):
+        constraint_type = constraint[0]
+        getattr(self, constraint_type)(*constraint[1:])
 
-    def print_query_log(self):
-        for q in self._query_log:
+    def print_constraint_log(self):
+        for q in self._constraint_log:
             print(q)
